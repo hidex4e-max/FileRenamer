@@ -3,32 +3,36 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
-using System.Text;
 using System.Windows.Forms;
-using Microsoft.VisualBasic.Devices;
-using Microsoft.VisualBasic.FileIO;
 
 namespace FileRenamer
 {
     internal class Update
     {
-        public void updatecheck()
+        public async void updatecheck()
         {
-            string address = "https://calmtempo.com/softupdate/FileRenamer/verson.txt";
-            WebClient webClient = new WebClient();
             try
             {
-                Stream stream = webClient.OpenRead(address);
-                StreamReader streamReader = new StreamReader(stream, Encoding.GetEncoding("Shift_JIS"));
-                string text = streamReader.ReadLine();
-                string address2 = streamReader.ReadLine();
-                streamReader.Close();
-                stream.Close();
-                if (Application.ProductVersion != text)
+                string apiUrl = "https://api.github.com/repos/hidex4e-max/FileRenamer/releases/latest";
+                WebClient webClient = new WebClient();
+                webClient.Headers.Add("User-Agent", "FileRenamer");
+                string json = await webClient.DownloadStringTaskAsync(apiUrl);
+
+                string tag = GetJsonValue(json, "tag_name");
+                string version = tag?.TrimStart('v');
+                string downloadUrl = GetJsonValue(json, "browser_download_url");
+
+                if (string.IsNullOrEmpty(version) || string.IsNullOrEmpty(downloadUrl))
                 {
-                    if (MessageBox.Show("新しいバージョンがあります\nアップデートしますか？", "アップデート", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+                    MessageBox.Show("バージョン情報を取得できませんでした", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                    return;
+                }
+
+                if (Application.ProductVersion != version)
+                {
+                    if (MessageBox.Show("新しいバージョン (" + version + ") があります\nアップデートしますか？", "アップデート", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
                     {
-                        doupdate(address2);
+                        doupdate(downloadUrl);
                     }
                 }
                 else
@@ -47,22 +51,44 @@ namespace FileRenamer
             string location = Assembly.GetExecutingAssembly().Location;
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0]);
             File.Delete(fileNameWithoutExtension + ".old");
-            File.Move(fileNameWithoutExtension + ".exe", fileNameWithoutExtension + ".old");
             try
             {
-                new Network().DownloadFile(address, fileNameWithoutExtension + ".exe", "", "", showUI: true, 6000, overwrite: true, UICancelOption.ThrowException);
+                File.Move(fileNameWithoutExtension + ".exe", fileNameWithoutExtension + ".old");
+            }
+            catch { }
+            try
+            {
+                WebClient webClient = new WebClient();
+                webClient.Headers.Add("User-Agent", "FileRenamer");
+                webClient.DownloadFile(address, fileNameWithoutExtension + ".exe");
                 Process.Start(location, "/up " + Process.GetCurrentProcess().Id);
                 Application.Exit();
             }
             catch
             {
-                File.Delete(fileNameWithoutExtension + ".exe");
-                File.Move(fileNameWithoutExtension + ".old", fileNameWithoutExtension + ".exe");
-                if (MessageBox.Show("アップデートに失敗しました。\nHPにアクセスしますか？。", "エラー", MessageBoxButtons.YesNo, MessageBoxIcon.Hand) == DialogResult.Yes)
+                try { File.Delete(fileNameWithoutExtension + ".exe"); } catch { }
+                try { File.Move(fileNameWithoutExtension + ".old", fileNameWithoutExtension + ".exe"); } catch { }
+                if (MessageBox.Show("アップデートに失敗しました。\nリリースページにアクセスしますか？", "エラー", MessageBoxButtons.YesNo, MessageBoxIcon.Hand) == DialogResult.Yes)
                 {
-                    Process.Start("http://calmtempo.webcrow.jp/");
+                    Process.Start("https://github.com/hidex4e-max/FileRenamer/releases");
                 }
             }
+        }
+
+        private string GetJsonValue(string json, string key)
+        {
+            string search = "\"" + key + "\":\"";
+            int idx = json.IndexOf(search);
+            if (idx == -1)
+            {
+                search = "\"" + key + "\": \"";
+                idx = json.IndexOf(search);
+                if (idx == -1) return null;
+            }
+            idx += search.Length;
+            int end = json.IndexOf("\"", idx);
+            if (end == -1) return null;
+            return json.Substring(idx, end - idx);
         }
     }
 }
