@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net462</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyTitle>FileRenamer</AssemblyTitle>
+    <Description>Change File name</Description>
+    <AssemblyCompany>https://calmtempo.com</AssemblyCompany>
+    <AssemblyProduct>FileRenamer</AssemblyProduct>
+    <AssemblyCopyright>Copyright c  2021 Zuxikku</AssemblyCopyright>
+    <Version>3.0.4</Version>
+    <AssemblyVersion>3.0.4.0</AssemblyVersion>
+    <FileVersion>3.0.4</FileVersion>
+    <Guid>85879d66-7d7a-4c09-8b91-942ce9c3ae38</Guid>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="app.ico" />
+  </ItemGroup>
+</Project>
